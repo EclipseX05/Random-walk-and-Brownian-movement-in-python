@@ -20,7 +20,8 @@ def run_simulation_1d():
         return positions
 
     def graphique_marche_aleatoire_simple():
-        #nombre de pas pour la marche aléatoire
+        #nombre de pas pour la marche aléatoire, le nombre de pas est pas important, il faut juste qu'il soit assez grand pour montrer l'évolution
+        plt.close('all')
         steps = 100
 
         #génération de la marche aléatoire en 1D
@@ -58,9 +59,9 @@ def run_simulation_1d():
             moyenne_retours = []  # pour stocker les moyennes des fins sur zéro pour chaque pas
             for i in range(1, steps + 1):
                 retour = 0
-                for j in range(1, nb_simulations + 1):
+                for _ in range(1, nb_simulations + 1):
                     position = 0
-                    for k in range(1, i + 1):
+                    for _ in range(1, i + 1):
                         step = random.randint(1, 2)  # déplacement aléatoire vers la gauche (-1) ou vers la droite (1)
                         if step == 1:
                             position -= 1
@@ -89,7 +90,7 @@ def run_simulation_1d():
         # création du graphique d'analyse
         global graphique_analyse_fig
         if graphique_analyse_fig is not None:
-            plt.close(graphique_analyse_fig)  # fermer la figure précédente s'il existe encore
+            plt.close(graphique_analyse_fig)  #fermer la figure précédente s'il existe encore
 
         graphique_analyse_fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
@@ -104,7 +105,7 @@ def run_simulation_1d():
 
         #graphique de l'écart entre les prédictions et les simulations
         ecarts = [abs(moyenne_zero[i] - predictions[i]) for i in range(len(moyenne_zero))]
-        ax2.plot(steps_range, ecarts, label="Écart entre simulations et prédictions")
+        ax2.scatter(steps_range, ecarts, label="Écart entre simulations et prédictions")
         ax2.set_title("Écart entre simulations et prédictions")
         ax2.set_xlabel("Nombre de pas")
         ax2.set_ylabel("Écart")
@@ -116,26 +117,33 @@ def run_simulation_1d():
         plt.show()
 
     def afficher_ecart_moyen():
+        def prediction_statistique(step):
+            return 1/(np.sqrt(np.pi*step))
+
         def nombre_fins_sur_zero_moyen(steps, nb_simulations):
-            moyenne_retours = []  
-            for i in range(1, steps + 1):
+            prediction = []
+            ecarts = []
+            moyenne_retours = []
+            nb_simulations = np.arange(1,nb_simulations+1,1)
+            for i in nb_simulations: #création de données pour l'axe y 
+                prediction_step = prediction_statistique(i)
+                prediction.append(prediction_step)
                 retour = 0
-                for j in range(1, nb_simulations + 1):
+                for j in range (1,i+1) : #nombres de marches aléatoires à faire pour une moyenne
                     position = 0
-                    for k in range(1, i + 1):
-                        step = random.randint(1, 2)  
+                    for k in range(1, steps + 1): #simulation marche aléatoire
+                        step = random.randint(1, 2) #déplacement aléatoire vers la gauche (-1) ou vers la droite (1)
                         if step == 1:
                             position -= 1
                         else:
                             position += 1
                     if position == 0:
                         retour += 1
-                retour_final = retour / nb_simulations
+                retour_final = retour / i
                 moyenne_retours.append(retour_final)
-            return moyenne_retours
-
-        def prediction_statistique(steps):
-            return 1 / np.sqrt(np.pi * steps)
+                ecart = abs(abs(moyenne_retours[i-1])-abs(prediction[i-1]))
+                ecarts.append(ecart)
+            return nb_simulations,ecarts
 
         #création de la fenêtre Tkinter pour saisir les paramètres
         fenetre = tk.Toplevel()
@@ -157,15 +165,11 @@ def run_simulation_1d():
         def calculer_et_afficher():
             pas = int(entry_pas.get())
             simulations_max = int(entry_simulations.get())
-            moyenne_retours = nombre_fins_sur_zero_moyen(pas, simulations_max)
-
-            #préparation des données pour les axes x et y
-            axes_x = list(range(1, simulations_max + 1))
-            axes_y = moyenne_retours
-
+            nb_simulations, ecarts = nombre_fins_sur_zero_moyen(pas, simulations_max)
+    
             #création du graphique
             plt.figure(figsize=(8, 6))
-            plt.plot(axes_x, axes_y, marker='o', linestyle='')
+            plt.plot(nb_simulations, ecarts, marker='o', linestyle='')
             plt.title("Nombre de fins sur 0 moyenné par rapport au nombre de simulations")
             plt.xlabel("Nombre de simulations")
             plt.ylabel("Nombre de fins sur 0 moyenné")
